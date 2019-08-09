@@ -26,6 +26,38 @@ The default combination `datasets.ImageFolder` + `data.DataLoader` is not enough
 
 The reason causing is the slow reading of discountiuous small chunks. You should have experienced one or two times, for example, type `ls` command under original ImageNet validation folder. To optimize, we need to compress small JPEG images into a large binary file. TensorFlow has its own `TFRecord` and MXNet uses `recordIO`. Beside these two, there are many other options like `hdf5`, `pth`, `n5`, `lmdb` etc. Here I will choose `lmdb`, because of its super effienceny. 
 
+### LMDB 
+LMDB is a json-like, but in binary stream key-value storage. In my design, the format of converted LMDB is defined as follow.
+
+key | value 
+--- | ---
+img-id1 | (jpeg_raw1, label1)
+img-id2 | (jpeg_raw2, label2)
+img-id3 | (jpeg_raw3, label3)
+... | ...
+img-idn | (jpeg_rawn, labeln)
+`__keys__` | [img-id1, img-id2, ... img-idn]
+`__len__` | n
+
+As for details of reading/writing, please refer to [code](tv_data_loader.py).
+
+
+### Convert `DatasetsFolder` to `LMDB`
+```bash
+python create_lmdb.py --data_dir ~/torch_data/ --name train --dataset ILSVRC --out_dir ~/torch_data-lmdb
+```
+
+### ImageFolderLMDB
+The usage of `ImageFolderLMDB` is identical to `torchvision.datasets`. 
+
+```python
+from tools.tv_data_loader import ImageFolderLMDB
+from torch.utils.data import DataLoader
+dst = ImageFolderLMDB(path, transform, target_transform)
+loader = DataLoader(dst, batch_size=64)
+```
+
+
 ## Data Parallel (On-going)
 The default data parallel of PyTorch, powerd by `nn.DataParallel` is in-efficienct! 
 
